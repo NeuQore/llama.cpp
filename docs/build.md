@@ -14,6 +14,7 @@ cd llama.cpp
 The following sections describe how to build with different backends and options.
 
 * [CPU Build](#cpu-build)
+* [AWS F2 CVA6 (this fork)](cva6-f2.md)
 * [BLAS Build](#blas-build)
 * [Metal Build](#metal-build)
 * [SYCL](#sycl)

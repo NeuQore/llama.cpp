@@ -1,5 +1,7 @@
 # llama.cpp
 
+**This is the SilverLining-EDA fork.** AWS F2 CVA6 bare-metal (`CVA6_MARCH`, `CVA6_BAREMETAL`) is documented in [docs/cva6-f2.md](docs/cva6-f2.md). FPGA load, GGUF embed, and UART steps are in [sle-benchmarks `tests/llama`](https://github.com/SilverLining-EDA/sle-benchmarks/blob/main/tests/llama/README.md).
+
 ![llama](https://raw.githubusercontent.com/ggml-org/llama.brand/refs/heads/master/cover/llama-cpp/cover-llama-cpp-dark.svg)
 
 <div align="center">
