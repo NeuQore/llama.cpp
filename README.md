@@ -24,7 +24,7 @@ Also needed on the host (install with apt if missing; `setup.sh` does not):
 | `python3`, `python3-venv` | optional dummy GGUF |
 | `make` | sle-benchmarks `tests/llama/Makefile` |
 | [sle-benchmarks](https://github.com/SilverLining-EDA/sle-benchmarks) | `tests/llama` glue, `llama.bin`, `run.sh` |
-| [aws-fpga](https://github.com/SilverLining-EDA/aws-fpga) | F2 SDK + `cl_cva6_benchmarks` loader |
+| [aws-fpga](https://github.com/SilverLining-EDA/aws-fpga) | F2 SDK + [`cl_cva6_llama`](https://github.com/SilverLining-EDA/aws-fpga/tree/main/hdk/cl/examples/cl_cva6_llama) interactive loader |
 
 Default `TOOLS_DIR` is `/projects/prj1/sle-wajahat/tools` on the F2 instance, otherwise `../tools` next to this clone. Override with `TOOLS_DIR=/path ./setup.sh`.
 
@@ -78,9 +78,9 @@ make LLAMA_SRC=/path/to/llama.cpp
 
 March is `rv64imfd_zicsr` / `lp64d`. Do not use `rv64gc`.
 
-### 6. Run on F2
+### 6. Interactive run on F2
 
-AGFI `agfi-0248c1f84010b03e9`. UART timeout is 600 s (`run.sh`).
+AGFI `agfi-0248c1f84010b03e9`. Host loader: [`cl_cva6_llama`](https://github.com/SilverLining-EDA/aws-fpga/tree/main/hdk/cl/examples/cl_cva6_llama) (logo + stdin prompts). UART is CVA6→host only; each prompt is an HBM mailbox write while CVA6 is in reset.
 
 ```bash
 export AWS_FPGA_REPO_DIR=/projects/prj1/sle-wajahat/aws-fpga
@@ -89,7 +89,7 @@ cd /path/to/sle-benchmarks/tests/llama
 # SKIP_AGFI_LOAD=1 ./run.sh   # AFI already on the slot
 ```
 
-UART: `tests/llama/llama.log`. Expect `magic=GGUF` then decode. The prompt is hardcoded `"Hello"` (4 tokens) in `llama_main.cpp`.
+Wait until CVA6 prints `>>> `, then type a prompt and press Enter. `/bye` quits.
 
 This HBM port **never completes AMO/LR/SC**; that is why the image is built without the A extension.
 

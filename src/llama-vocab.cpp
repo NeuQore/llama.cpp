@@ -2521,8 +2521,14 @@ void llama_vocab::impl::load(llama_model_loader & ml, const LLM_KV & kv) {
 
     // determine the newline token: LLaMA "<0x0A>" == 10 == '\n', Falcon 193 == '\n'
     if (type == LLAMA_VOCAB_TYPE_SPM) {
+        // #region agent log
+        LLAMA_LOG_INFO("%s: looking up newline token\n", __func__);
+        // #endregion
         try {
             linefeed_id = vocab.byte_to_token('\n');
+            // #region agent log
+            LLAMA_LOG_INFO("%s: newline token id=%d\n", __func__, linefeed_id);
+            // #endregion
         } catch (const std::exception & e) {
             LLAMA_LOG_WARN("%s: SPM vocabulary, but newline token not found: %s! Using special_pad_id instead.", __func__, e.what());
             linefeed_id = special_pad_id;
@@ -3197,6 +3203,9 @@ void llama_vocab::impl::init_tokenizer(enum llama_vocab_type type) {
         default:
             GGML_ABORT("unsupported vocab type");
     }
+    // #region agent log
+    LLAMA_LOG_INFO("%s: tokenizer object created type=%d\n", __func__, (int)type);
+    // #endregion
 }
 
 //
@@ -3923,7 +3932,15 @@ llama_token llama_vocab::byte_to_token(uint8_t ch) const {
             }
             // Try to fall back to just the byte as a string
             const char buf2[2] = { (char)ch, 0 };
-            return pimpl->token_to_id.at(buf2);
+            token = pimpl->token_to_id.find(buf2);
+            if (token != pimpl->token_to_id.end()) {
+                return (*token).second;
+            }
+            // Bare-metal libstdc++ exception unwind can hang; dummy GGUFs often omit <0xXX>.
+            if (pimpl->special_unk_id != LLAMA_TOKEN_NULL) {
+                return pimpl->special_unk_id;
+            }
+            return 0;
         }
         case LLAMA_VOCAB_TYPE_WPM:
         case LLAMA_VOCAB_TYPE_BPE: {
