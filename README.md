@@ -56,16 +56,15 @@ export LLAMA_SRC="$(pwd)"   # this llama.cpp tree
 
 ### 4. Get a GGUF
 
-`model.gguf` is not in git. Copy a tiny GGUF into `sle-benchmarks/tests/llama/model.gguf` (TinyStories-class; 62.5 MHz cannot run 7B). If Hugging Face returns 401, copy the file from another machine.
-
-Dummy bring-up GGUF (valid magic, random weights; prompt must stay `"Hello"`):
+`model.gguf` is not in git. `make` in `tests/llama` downloads **TinyStories 15M Q8** from `ggml-org/models-moved` if the file is missing (the older `tinyllamas` Hugging Face path often returns 401).
 
 ```bash
-source /projects/prj1/sle-wajahat/tools/cva6-env.sh
 cd /path/to/sle-benchmarks/tests/llama
-/projects/prj1/sle-wajahat/tools/cva6-gguf-venv/bin/python \
-  baremetal/gen_tiny_gguf.py model.gguf
+curl -L --fail -o model.gguf \
+  "https://huggingface.co/ggml-org/models-moved/resolve/main/tinyllamas/stories15M-q8_0.gguf"
 ```
+
+Prompt **`Once upon a time`**. Dummy `gen_tiny_gguf.py` weights are random and will not produce English.
 
 ### 5. Build `llama.bin`
 
@@ -89,9 +88,11 @@ cd /path/to/sle-benchmarks/tests/llama
 # SKIP_AGFI_LOAD=1 ./run.sh   # AFI already on the slot
 ```
 
-Wait until CVA6 prints `>>> `, then type a prompt and press Enter. `/bye` quits.
+Wait until CVA6 prints `>>> `, then type **`Once upon a time`**. `/bye` quits.
 
-This HBM port **never completes AMO/LR/SC**; that is why the image is built without the A extension.
+Each prompt **resets CVA6 and reloads the GGUF** (this AGFI cannot write HBM while the CPU runs). The host rewrites `llama.bin` on every prompt so `.data` in HBM is clean. First load ~20–40 s; then ~10 s/token.
+
+This HBM port **never completes AMO/LR/SC**; that is why the image is built without the A extension. SPM vocabs that omit `<0xXX>` must not use `unordered_map::at()` (bare-metal exception unwind hangs).
 
 ![llama](https://raw.githubusercontent.com/ggml-org/llama.brand/refs/heads/master/cover/llama-cpp/cover-llama-cpp-dark.svg)
 
