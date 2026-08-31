@@ -1,6 +1,97 @@
 # llama.cpp
 
-**This is the SilverLining-EDA fork.** AWS F2 CVA6 bare-metal (`CVA6_MARCH`, `CVA6_BAREMETAL`) is documented in [docs/cva6-f2.md](docs/cva6-f2.md). FPGA load, GGUF embed, and UART steps are in [sle-benchmarks `tests/llama`](https://github.com/SilverLining-EDA/sle-benchmarks/blob/main/tests/llama/README.md).
+**This is the SilverLining-EDA fork.** Use it for AWS F2 CVA6 bare-metal (`CVA6_MARCH`, `CVA6_BAREMETAL`). Upstream ggml-org llama.cpp will not build that target.
+
+## AWS F2 CVA6 — step by step
+
+Host FPGA load, GGUF embed, and UART live in [sle-benchmarks `tests/llama`](https://github.com/SilverLining-EDA/sle-benchmarks/blob/main/tests/llama/README.md). Patch notes: [docs/cva6-f2.md](docs/cva6-f2.md).
+
+### Tool dependencies
+
+The Ubuntu package `gcc-riscv64-unknown-elf` has **no newlib and no libstdc++**. Do not use it for this build. `setup.sh` installs portable copies (no sudo):
+
+| Dependency | Why | Installed by `./setup.sh` |
+|------------|-----|---------------------------|
+| **xPack GNU RISC-V GCC 15.2.0-1** (`riscv-none-elf`) | newlib + libstdc++; `-march=rv64imfd_zicsr` (no A, no C) | `$TOOLS_DIR/xpack-riscv-none-elf-gcc-15.2.0-1` |
+| **CMake 3.30.5** (portable) | llama.cpp is CMake; ≥ 3.14 required | `$TOOLS_DIR/cmake-3.30.5-linux-x86_64` |
+| **numpy** (Python venv) | optional dummy GGUF via `gen_tiny_gguf.py` | `$TOOLS_DIR/cva6-gguf-venv` |
+
+Also needed on the host (install with apt if missing; `setup.sh` does not):
+
+| Host package | Used for |
+|-------------|---------|
+| `curl`, `tar`, `coreutils` | download and unpack the toolchains |
+| `python3`, `python3-venv` | optional dummy GGUF |
+| `make` | sle-benchmarks `tests/llama/Makefile` |
+| [sle-benchmarks](https://github.com/SilverLining-EDA/sle-benchmarks) | `tests/llama` glue, `llama.bin`, `run.sh` |
+| [aws-fpga](https://github.com/SilverLining-EDA/aws-fpga) | F2 SDK + `cl_cva6_benchmarks` loader |
+
+Default `TOOLS_DIR` is `/projects/prj1/sle-wajahat/tools` on the F2 instance, otherwise `../tools` next to this clone. Override with `TOOLS_DIR=/path ./setup.sh`.
+
+### 1. Clone this fork
+
+```bash
+git clone git@github.com:SilverLining-EDA/llama.cpp.git
+cd llama.cpp
+```
+
+### 2. Install toolchains
+
+```bash
+chmod +x setup.sh
+./setup.sh
+source /projects/prj1/sle-wajahat/tools/cva6-env.sh
+# if TOOLS_DIR was not the F2 default:
+# source "$TOOLS_DIR/cva6-env.sh"
+```
+
+This sets `XPACK_ROOT` and `CMAKE` for the benchmark Makefile.
+
+### 3. Clone the benchmark harness
+
+```bash
+git clone git@github.com:SilverLining-EDA/sle-benchmarks.git
+export LLAMA_SRC="$(pwd)"   # this llama.cpp tree
+```
+
+### 4. Get a GGUF
+
+`model.gguf` is not in git. Copy a tiny GGUF into `sle-benchmarks/tests/llama/model.gguf` (TinyStories-class; 62.5 MHz cannot run 7B). If Hugging Face returns 401, copy the file from another machine.
+
+Dummy bring-up GGUF (valid magic, random weights; prompt must stay `"Hello"`):
+
+```bash
+source /projects/prj1/sle-wajahat/tools/cva6-env.sh
+cd /path/to/sle-benchmarks/tests/llama
+/projects/prj1/sle-wajahat/tools/cva6-gguf-venv/bin/python \
+  baremetal/gen_tiny_gguf.py model.gguf
+```
+
+### 5. Build `llama.bin`
+
+```bash
+source /projects/prj1/sle-wajahat/tools/cva6-env.sh
+cd /path/to/sle-benchmarks/tests/llama
+make LLAMA_SRC=/path/to/llama.cpp
+# on the F2 layout the Makefile defaults already match
+```
+
+March is `rv64imfd_zicsr` / `lp64d`. Do not use `rv64gc`.
+
+### 6. Run on F2
+
+AGFI `agfi-0248c1f84010b03e9`. UART timeout is 600 s (`run.sh`).
+
+```bash
+export AWS_FPGA_REPO_DIR=/projects/prj1/sle-wajahat/aws-fpga
+cd /path/to/sle-benchmarks/tests/llama
+./run.sh
+# SKIP_AGFI_LOAD=1 ./run.sh   # AFI already on the slot
+```
+
+UART: `tests/llama/llama.log`. Expect `magic=GGUF` then decode. The prompt is hardcoded `"Hello"` (4 tokens) in `llama_main.cpp`.
+
+This HBM port **never completes AMO/LR/SC**; that is why the image is built without the A extension.
 
 ![llama](https://raw.githubusercontent.com/ggml-org/llama.brand/refs/heads/master/cover/llama-cpp/cover-llama-cpp-dark.svg)
 
