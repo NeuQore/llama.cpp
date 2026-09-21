@@ -1,6 +1,6 @@
 # AWS F2 CVA6 (this fork)
 
-This fork adds `CVA6_MARCH` and `CVA6_BAREMETAL` so [sle-benchmarks `tests/llama`](https://github.com/SilverLining-EDA/sle-benchmarks/blob/main/tests/llama/README.md) can link a static `llama.bin` for the F2 [`cl_cva6_llama`](https://github.com/SilverLining-EDA/aws-fpga/tree/main/hdk/cl/examples/cl_cva6_llama) interactive loader (BAR4 at `0x80000000`, UART TX-only, HBM mailbox prompts).
+This fork adds `CVA6_MARCH` and `CVA6_BAREMETAL` so [NeuQore/benchmarks `tests/llama`](https://github.com/NeuQore/benchmarks/blob/cva6/tests/llama/README.md) can link a static `llama.bin` for the F2 [`cl_cva6_llama`](https://github.com/NeuQore/aws-fpga/tree/cva6/hdk/cl/examples/cl_cva6_llama) interactive loader (BAR4 at `0x80000000`, UART TX-only, HBM mailbox prompts).
 
 **Step-by-step (clone, `setup.sh`, GGUF, `make`, FPGA):** see the [AWS F2 CVA6 section in README.md](../README.md#aws-f2-cva6--step-by-step).
 

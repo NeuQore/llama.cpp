@@ -1,10 +1,10 @@
 # llama.cpp
 
-**This is the SilverLining-EDA fork.** Use it for AWS F2 CVA6 bare-metal (`CVA6_MARCH`, `CVA6_BAREMETAL`). Upstream ggml-org llama.cpp will not build that target.
+**This is the NeuQore fork** ([NeuQore/llama.cpp](https://github.com/NeuQore/llama.cpp), branch **`cva6`**). Use it for AWS F2 CVA6 bare-metal (`CVA6_MARCH`, `CVA6_BAREMETAL`). Upstream ggml-org llama.cpp will not build that target.
 
 ## AWS F2 CVA6 — step by step
 
-Host FPGA load, GGUF embed, and UART live in [sle-benchmarks `tests/llama`](https://github.com/SilverLining-EDA/sle-benchmarks/blob/main/tests/llama/README.md). Patch notes: [docs/cva6-f2.md](docs/cva6-f2.md).
+Host FPGA load, GGUF embed, and UART live in [NeuQore/benchmarks `tests/llama`](https://github.com/NeuQore/benchmarks/blob/cva6/tests/llama/README.md). Patch notes: [docs/cva6-f2.md](docs/cva6-f2.md). FPGA examples index: [CVA6_F2_README.md](https://github.com/NeuQore/aws-fpga/blob/cva6/hdk/cl/examples/CVA6_F2_README.md).
 
 ### Tool dependencies
 
@@ -23,15 +23,15 @@ Also needed on the host (install with apt if missing; `setup.sh` does not):
 | `curl`, `tar`, `coreutils` | download and unpack the toolchains |
 | `python3`, `python3-venv` | optional dummy GGUF |
 | `make` | sle-benchmarks `tests/llama/Makefile` |
-| [sle-benchmarks](https://github.com/SilverLining-EDA/sle-benchmarks) | `tests/llama` glue, `llama.bin`, `run.sh` |
-| [aws-fpga](https://github.com/SilverLining-EDA/aws-fpga) | F2 SDK + [`cl_cva6_llama`](https://github.com/SilverLining-EDA/aws-fpga/tree/main/hdk/cl/examples/cl_cva6_llama) interactive loader |
+| [NeuQore/benchmarks](https://github.com/NeuQore/benchmarks) | `tests/llama` glue, `llama.bin`, `run.sh` |
+| [NeuQore/aws-fpga](https://github.com/NeuQore/aws-fpga) | F2 SDK + [`cl_cva6_llama`](https://github.com/NeuQore/aws-fpga/tree/cva6/hdk/cl/examples/cl_cva6_llama) interactive loader |
 
 Default `TOOLS_DIR` is `/projects/prj1/sle-wajahat/tools` on the F2 instance, otherwise `../tools` next to this clone. Override with `TOOLS_DIR=/path ./setup.sh`.
 
 ### 1. Clone this fork
 
 ```bash
-git clone git@github.com:SilverLining-EDA/llama.cpp.git
+git clone -b cva6 https://github.com/NeuQore/llama.cpp.git
 cd llama.cpp
 ```
 
@@ -50,7 +50,7 @@ This sets `XPACK_ROOT` and `CMAKE` for the benchmark Makefile.
 ### 3. Clone the benchmark harness
 
 ```bash
-git clone git@github.com:SilverLining-EDA/sle-benchmarks.git
+git clone -b cva6 https://github.com/NeuQore/benchmarks.git sle-benchmarks
 export LLAMA_SRC="$(pwd)"   # this llama.cpp tree
 ```
 
@@ -79,7 +79,7 @@ March is `rv64imfd_zicsr` / `lp64d`. Do not use `rv64gc`.
 
 ### 6. Interactive run on F2
 
-AGFI `agfi-0248c1f84010b03e9`. Host loader: [`cl_cva6_llama`](https://github.com/SilverLining-EDA/aws-fpga/tree/main/hdk/cl/examples/cl_cva6_llama) (logo + stdin prompts). UART is CVA6→host only; each prompt is an HBM mailbox write while CVA6 is in reset.
+AGFI `agfi-0248c1f84010b03e9`. Host loader: [`cl_cva6_llama`](https://github.com/NeuQore/aws-fpga/tree/cva6/hdk/cl/examples/cl_cva6_llama) (logo + stdin prompts). UART is CVA6→host only; each prompt is an HBM mailbox write while CVA6 is in reset.
 
 ```bash
 export AWS_FPGA_REPO_DIR=/projects/prj1/sle-wajahat/aws-fpga
