@@ -908,6 +908,14 @@ const struct ggml_tensor * llama_model_loader::check_tensor_dims(
     }
 
     if (!is_ok) {
+        // #region agent log
+        LLAMA_LOG_ERROR("%s: wrong shape %s expected ne0=%lld ne1=%lld got ne0=%lld ne1=%lld ne2=%lld ne3=%lld\n",
+                __func__, name.c_str(),
+                (long long)(ne.size() > 0 ? ne[0] : -1),
+                (long long)(ne.size() > 1 ? ne[1] : -1),
+                (long long)cur->ne[0], (long long)cur->ne[1],
+                (long long)cur->ne[2], (long long)cur->ne[3]);
+        // #endregion
         throw std::runtime_error(
                 format("%s: tensor '%s' has wrong shape; expected %s, got %s",
                     __func__, name.c_str(),
@@ -926,6 +934,9 @@ static bool weight_buft_supported(const llama_hparams & hparams, ggml_tensor * w
         return true;
     }
 
+    // #region agent log
+    LLAMA_LOG_INFO("weight_buft_supported: enter name=%s op=%s\n", w->name, ggml_op_name(op));
+    // #endregion
     ggml_init_params params = {
         /*.mem_size   =*/ ggml_tensor_overhead()*8,
         /*.mem_buffer =*/ NULL,
@@ -1054,6 +1065,9 @@ static bool weight_buft_supported(const llama_hparams & hparams, ggml_tensor * w
     bool op_supported = ggml_backend_dev_supports_op(dev, op_tensor);
     ggml_backend_buffer_free(w->buffer);
     w->buffer = nullptr;
+    // #region agent log
+    LLAMA_LOG_INFO("weight_buft_supported: exit name=%s supported=%d\n", w->name, (int)op_supported);
+    // #endregion
 
     return op_supported;
 }
@@ -1341,6 +1355,11 @@ struct ggml_tensor * llama_model_loader::create_tensor(
     if (cur == NULL) {
         return NULL;
     }
+    // #region agent log
+    LLAMA_LOG_INFO("create_tensor: dims ok %s got %lld,%lld\n", tn.str().c_str(),
+            (long long)cur->ne[0], (long long)cur->ne[1]);
+    LLAMA_LOG_INFO("create_tensor: selecting buft %s\n", tn.str().c_str());
+    // #endregion
 
     if (flags & TENSOR_READ_LAZY) {
         // the decision must not depend on the load mode, or the memory-fit pass (no_alloc, no mmap)
@@ -1367,8 +1386,14 @@ struct ggml_tensor * llama_model_loader::create_tensor(
     if (buft == nullptr) {
         return nullptr;
     }
+    // #region agent log
+    LLAMA_LOG_INFO("create_tensor: buft ok %s\n", tn.str().c_str());
+    // #endregion
 
     ggml_context * ctx = ctx_for_buft(buft);
+    // #region agent log
+    LLAMA_LOG_INFO("create_tensor: ctx ok %s ctx=%p\n", tn.str().c_str(), (void *)ctx);
+    // #endregion
 
     // if duplicated, check if the original tensor was allocated in the same buffer type context and avoid creating a new one
     if (flags & TENSOR_DUPLICATED) {
@@ -1382,6 +1407,9 @@ struct ggml_tensor * llama_model_loader::create_tensor(
 
     struct ggml_tensor * tensor = ggml_dup_tensor(ctx, &t_meta);
     ggml_set_name(tensor, ggml_get_name(&t_meta));
+    // #region agent log
+    LLAMA_LOG_INFO("create_tensor: done %s\n", tn.str().c_str());
+    // #endregion
 
     if (duplicated) {
         size_data += ggml_nbytes(&t_meta);
